@@ -23,9 +23,9 @@ class GlassPosQrApp extends StatelessWidget {
     return MaterialApp(
       title: 'GlassPOS QR — Self Order & Kasir QRIS',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.lightTheme,
+      themeMode: ThemeMode.light,
       home: const AuthGate(),
     );
   }
