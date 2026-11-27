@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/glass_buttons.dart';
 import '../../core/widgets/glass_container.dart';
+import '../../core/widgets/pos_header.dart';
 import '../../models/user_profile.dart';
 import '../../services/auth_service.dart';
 
@@ -75,149 +76,193 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Color _roleColor(UserRole role) {
+  Color _roleBg(UserRole role) {
     switch (role) {
       case UserRole.admin:
-        return AppColors.tertiaryLight;
+        return AppColors.semanticWarningSoft;
       case UserRole.kasir:
-        return AppColors.secondaryLight;
+        return AppColors.semanticSuccessSoft;
       case UserRole.user:
-        return AppColors.primaryTonal;
+        return AppColors.accentSoft;
+    }
+  }
+
+  Color _roleFg(UserRole role) {
+    switch (role) {
+      case UserRole.admin:
+        return AppColors.statusPendingText;
+      case UserRole.kasir:
+        return AppColors.semanticSuccess;
+      case UserRole.user:
+        return AppColors.accentTerracotta;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final roleColor = _roleColor(widget.profile.role);
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    final roleBg = _roleBg(widget.profile.role);
+    final roleFg = _roleFg(widget.profile.role);
 
-    return SafeArea(
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 110),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text('Profil & Sesi Akun', style: theme.textTheme.headlineMedium),
-                const SizedBox(height: 6),
+    final contentColumn = Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (!isMobile) ...[
+                Text(
+                  'Profil & Sesi Akun',
+                  style: theme.textTheme.headlineMedium,
+                ),
+                const SizedBox(height: 4),
                 Text(
                   'Kelola nama tampilan akun Anda. Hak akses peran dikunci oleh server.',
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 20),
-                GlassContainer(
-                  tier: GlassTier.level1,
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 28,
-                            backgroundColor: roleColor.withValues(alpha: 0.2),
-                            child: Text(
-                              widget.profile.fullName.isNotEmpty
-                                  ? widget.profile.fullName[0].toUpperCase()
-                                  : 'U',
-                              style: theme.textTheme.headlineSmall
-                                  ?.copyWith(color: roleColor),
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  widget.profile.fullName,
-                                  style: theme.textTheme.titleLarge,
-                                ),
-                                if (widget.profile.email != null)
-                                  Text(
-                                    widget.profile.email!,
-                                    style: theme.textTheme.bodyMedium,
-                                  ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: roleColor.withValues(alpha: 0.16),
-                              borderRadius: BorderRadius.circular(999),
-                              border:
-                                  Border.all(color: roleColor.withValues(alpha: 0.4)),
-                            ),
-                            child: Text(
-                              widget.profile.role.label.toUpperCase(),
-                              style: theme.textTheme.labelMedium
-                                  ?.copyWith(color: roleColor),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      const Divider(),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _nameCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Nama Lengkap',
-                          prefixIcon: Icon(Icons.badge_outlined),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      GlassPrimaryButton(
-                        label: 'Simpan Nama',
-                        icon: Icons.save_rounded,
-                        loading: _saving,
-                        onPressed: _saveName,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                GlassContainer(
-                  tier: GlassTier.level1,
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      _InfoRow(
-                        label: 'Terdaftar Sejak',
-                        value: AppFormatters.dateTimeWib(widget.profile.createdAt),
-                      ),
-                      const SizedBox(height: 10),
-                      _InfoRow(
-                        label: 'Payment Gateway',
-                        value: SupabaseConfig.isTestMode
-                            ? 'Xendit (Test Mode / Sandbox)'
-                            : 'Xendit (Production)',
-                      ),
-                      const SizedBox(height: 10),
-                      const _InfoRow(
-                        label: 'Zona Waktu Operasional',
-                        value: 'Asia/Jakarta (WIB)',
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                GlassOutlinedButton(
-                  label: _signingOut ? 'Keluar...' : 'Keluar dari Akun',
-                  icon: Icons.logout_rounded,
-                  isDestructive: true,
-                  expand: true,
-                  onPressed: _signingOut ? null : _signOut,
-                ),
               ],
-            ),
+              GlassContainer(
+                tier: GlassTier.level1,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 26,
+                          backgroundColor: AppColors.slateHeader,
+                          child: Text(
+                            widget.profile.fullName.isNotEmpty
+                                ? widget.profile.fullName[0].toUpperCase()
+                                : 'U',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.profile.fullName,
+                                style: theme.textTheme.titleLarge,
+                              ),
+                              if (widget.profile.email != null)
+                                Text(
+                                  widget.profile.email!,
+                                  style: theme.textTheme.bodyMedium,
+                                ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: roleBg,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            widget.profile.role.label.toUpperCase(),
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: roleFg,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _nameCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Nama Lengkap',
+                        prefixIcon: Icon(Icons.badge_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    GlassPrimaryButton(
+                      label: 'Simpan Nama',
+                      icon: Icons.save_rounded,
+                      loading: _saving,
+                      onPressed: _saveName,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              GlassContainer(
+                tier: GlassTier.level1,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _InfoRow(
+                      label: 'Terdaftar Sejak',
+                      value: AppFormatters.dateTimeWib(widget.profile.createdAt),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      child: Divider(),
+                    ),
+                    _InfoRow(
+                      label: 'Payment Gateway',
+                      value: SupabaseConfig.isTestMode
+                          ? 'Xendit (Test Mode / Sandbox)'
+                          : 'Xendit (Production)',
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      child: Divider(),
+                    ),
+                    const _InfoRow(
+                      label: 'Zona Waktu Operasional',
+                      value: 'Asia/Jakarta (WIB)',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              GlassOutlinedButton(
+                label: _signingOut ? 'Keluar...' : 'Keluar dari Akun',
+                icon: Icons.logout_rounded,
+                isDestructive: true,
+                expand: true,
+                onPressed: _signingOut ? null : _signOut,
+              ),
+            ],
           ),
         ),
       ),
+    );
+
+    if (isMobile) {
+      return Column(
+        children: [
+          PosSlateHeader(
+            title: 'Profil & Sesi Akun',
+            subtitle:
+                'Kelola nama tampilan akun Anda. Hak akses peran dikunci oleh server.',
+          ),
+          Expanded(
+            child: SingleChildScrollView(child: contentColumn),
+          ),
+        ],
+      );
+    }
+
+    return SafeArea(
+      child: SingleChildScrollView(child: contentColumn),
     );
   }
 }
@@ -235,12 +280,16 @@ class _InfoRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: theme.textTheme.bodyMedium),
-        Text(
-          value,
-          style: AppFormatters.tabular(
-            theme.textTheme.bodyMedium?.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: AppFormatters.tabular(
+              theme.textTheme.bodyMedium?.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),

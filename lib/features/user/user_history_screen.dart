@@ -4,6 +4,7 @@ import '../../core/utils/formatters.dart';
 import '../../core/widgets/glass_buttons.dart';
 import '../../core/widgets/glass_container.dart';
 import '../../core/widgets/glass_status_badge.dart';
+import '../../core/widgets/pos_header.dart';
 import '../../models/order_model.dart';
 import '../../services/order_service.dart';
 
@@ -55,15 +56,31 @@ class _UserHistoryScreenState extends State<UserHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return SafeArea(
-      child: RefreshIndicator(
-        color: AppColors.primary,
-        backgroundColor: AppColors.surfaceBase,
-        onRefresh: _loadHistory,
-        child: CustomScrollView(
-          slivers: [
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
+    return RefreshIndicator(
+      color: AppColors.accentTerracotta,
+      backgroundColor: AppColors.surfaceCard,
+      onRefresh: _loadHistory,
+      child: CustomScrollView(
+        slivers: [
+          if (isMobile)
+            SliverToBoxAdapter(
+              child: PosSlateHeader(
+                eyebrow: 'TRANSAKSI AKUN',
+                title: 'Riwayat Pesanan Saya',
+                subtitle:
+                    'Hanya menampilkan transaksi milik akun Anda (dilindungi RLS).',
+                trailing: PosHeaderIconButton(
+                  icon: Icons.refresh_rounded,
+                  tooltip: 'Muat ulang riwayat',
+                  onPressed: _loadHistory,
+                ),
+              ),
+            )
+          else
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+              padding: const EdgeInsets.fromLTRB(24, 22, 24, 12),
               sliver: SliverToBoxAdapter(
                 child: Row(
                   children: [
@@ -71,8 +88,10 @@ class _UserHistoryScreenState extends State<UserHistoryScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Riwayat Pesanan Saya',
-                              style: theme.textTheme.headlineMedium),
+                          Text(
+                            'Riwayat Pesanan Saya',
+                            style: theme.textTheme.headlineMedium,
+                          ),
                           const SizedBox(height: 4),
                           Text(
                             'Hanya menampilkan transaksi milik akun Anda (dilindungi RLS).',
@@ -90,41 +109,49 @@ class _UserHistoryScreenState extends State<UserHistoryScreen> {
                 ),
               ),
             ),
-            if (_loading)
-              const SliverFillRemaining(
-                child: Center(
-                    child: CircularProgressIndicator(color: AppColors.primary)),
-              )
-            else if (_error != null)
-              SliverFillRemaining(
-                child: Center(child: Text(_error!)),
-              )
-            else if (_orders.isEmpty)
-              SliverFillRemaining(
-                child: Center(
-                  child: Text(
-                    'Belum ada riwayat pesanan.',
-                    style: theme.textTheme.bodyLarge,
-                  ),
-                ),
-              )
-            else
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 6, 20, 115),
-                sliver: SliverList.separated(
-                  itemCount: _orders.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final order = _orders[index];
-                    return _HistoryOrderCard(
-                      order: order,
-                      onOpenQr: () => widget.onOpenActiveOrder(order),
-                    );
-                  },
+
+          if (_loading)
+            const SliverFillRemaining(
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.accentTerracotta,
                 ),
               ),
-          ],
-        ),
+            )
+          else if (_error != null)
+            SliverFillRemaining(
+              child: Center(child: Text(_error!)),
+            )
+          else if (_orders.isEmpty)
+            SliverFillRemaining(
+              child: Center(
+                child: Text(
+                  'Belum ada riwayat pesanan.',
+                  style: theme.textTheme.bodyLarge,
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                isMobile ? 20 : 24,
+                16,
+                isMobile ? 20 : 24,
+                32,
+              ),
+              sliver: SliverList.separated(
+                itemCount: _orders.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final order = _orders[index];
+                  return _HistoryOrderCard(
+                    order: order,
+                    onOpenQr: () => widget.onOpenActiveOrder(order),
+                  );
+                },
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -155,7 +182,7 @@ class _HistoryOrderCardState extends State<_HistoryOrderCard> {
 
     return GlassContainer(
       tier: GlassTier.level1,
-      enableBlur: false, // Pseudo-Glass for 60 FPS list scrolling
+      enableBlur: false,
       borderRadius: 16,
       padding: const EdgeInsets.all(16),
       onTap: () => setState(() => _expanded = !_expanded),
@@ -164,24 +191,36 @@ class _HistoryOrderCardState extends State<_HistoryOrderCard> {
         children: [
           Row(
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      order.orderCode,
-                      style: AppFormatters.tabular(theme.textTheme.titleMedium),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.ctaDark,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  order.orderCode,
+                  style: AppFormatters.tabular(
+                    const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${AppFormatters.dateTimeWib(order.createdAt)} • ${order.paymentMethodLabel}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  AppFormatters.dateTimeWib(order.createdAt),
+                  overflow: TextOverflow.ellipsis,
+                  style: AppFormatters.tabular(
+                    theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
               GlassStatusBadge(status: order.status, compact: true),
             ],
           ),
@@ -189,9 +228,33 @@ class _HistoryOrderCardState extends State<_HistoryOrderCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '${order.items.length} jenis item',
-                style: theme.textTheme.bodyMedium,
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.statusProcessingSoft,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      order.paymentMethodLabel,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: AppColors.statusProcessingText,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${order.items.length} jenis item',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
               Row(
                 children: [
@@ -199,11 +262,12 @@ class _HistoryOrderCardState extends State<_HistoryOrderCard> {
                     AppFormatters.rupiah(order.totalAmount),
                     style: AppFormatters.tabular(
                       theme.textTheme.titleMedium?.copyWith(
-                        color: AppColors.tertiaryLight,
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
                   Icon(
                     _expanded
                         ? Icons.expand_less_rounded
@@ -219,42 +283,60 @@ class _HistoryOrderCardState extends State<_HistoryOrderCard> {
               padding: EdgeInsets.symmetric(vertical: 10),
               child: Divider(),
             ),
-            ...order.items.map(
-              (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${item.quantity}x ${item.menuNameSnapshot}',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textPrimary,
-                        ),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.bgCanvas,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ...order.items.map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${item.quantity}x ${item.menuNameSnapshot}',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            AppFormatters.rupiah(item.subtotal),
+                            style: AppFormatters.tabular(
+                              theme.textTheme.bodyMedium?.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                  ),
+                  if (order.rejectionReason != null) ...[
+                    const SizedBox(height: 4),
                     Text(
-                      AppFormatters.rupiah(item.subtotal),
-                      style: AppFormatters.tabular(theme.textTheme.bodyMedium),
+                      'Alasan ditolak: ${order.rejectionReason}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.semanticError,
+                      ),
                     ),
                   ],
-                ),
+                  if (order.payment?.gatewayReference != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Referensi Xendit: ${order.payment!.gatewayReference}',
+                      style: AppFormatters.tabular(theme.textTheme.bodySmall),
+                    ),
+                  ],
+                ],
               ),
             ),
-            if (order.rejectionReason != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                'Alasan ditolak: ${order.rejectionReason}',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: AppColors.errorTonal),
-              ),
-            ],
-            if (order.payment?.gatewayReference != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                'Referensi Xendit: ${order.payment!.gatewayReference}',
-                style: AppFormatters.tabular(theme.textTheme.bodySmall),
-              ),
-            ],
             if (canReopenQr) ...[
               const SizedBox(height: 12),
               GlassPrimaryButton(

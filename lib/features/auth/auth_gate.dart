@@ -105,14 +105,17 @@ class _AuthGateState extends State<AuthGate> {
     }
 
     if (_loading) {
-      return const GlassScaffold(
+      return GlassScaffold(
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(color: AppColors.primary),
-              SizedBox(height: 16),
-              Text('Memuat sesi & peran pengguna...'),
+              const CircularProgressIndicator(color: AppColors.accentTerracotta),
+              const SizedBox(height: 16),
+              Text(
+                'Memuat sesi & peran pengguna...',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
             ],
           ),
         ),
@@ -132,9 +135,20 @@ class _AuthGateState extends State<AuthGate> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.cloud_off_rounded,
-                        size: 44, color: AppColors.errorLight),
-                    const SizedBox(height: 12),
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: const BoxDecoration(
+                        color: AppColors.semanticErrorSoft,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.cloud_off_rounded,
+                        size: 32,
+                        color: AppColors.semanticError,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
                     Text(
                       'Gagal Memuat Profil',
                       style: Theme.of(context).textTheme.titleLarge,
@@ -226,12 +240,12 @@ class _SupabaseSetupNoticeScreen extends StatelessWidget {
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
-                            color: AppColors.tertiary.withValues(alpha: 0.2),
+                            color: AppColors.semanticWarningSoft,
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: const Icon(
                             Icons.settings_ethernet_rounded,
-                            color: AppColors.tertiaryLight,
+                            color: AppColors.statusPendingText,
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -255,7 +269,7 @@ class _SupabaseSetupNoticeScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: AppColors.bgCanvasDeep,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.borderGlassSubtle),
+                        border: Border.all(color: AppColors.borderDefault),
                       ),
                       child: const SelectableText(
                         'File: lib/core/config/supabase_config.dart\n\n'
@@ -268,7 +282,7 @@ class _SupabaseSetupNoticeScreen extends StatelessWidget {
                         style: TextStyle(
                           fontFamily: 'monospace',
                           fontSize: 12,
-                          color: AppColors.primaryTonal,
+                          color: AppColors.textPrimary,
                           height: 1.5,
                         ),
                       ),

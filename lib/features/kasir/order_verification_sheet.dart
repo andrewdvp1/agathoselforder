@@ -4,18 +4,13 @@ import '../../core/config/supabase_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/glass_buttons.dart';
-import '../../core/widgets/glass_container.dart';
 import '../../core/widgets/glass_status_badge.dart';
 import '../../core/widgets/payment_success_modal.dart';
 import '../../models/order_model.dart';
 import '../../services/order_service.dart';
 
-/// Glass Level 3 Order Verification Modal for Cashier.
-/// Handles:
-/// - Verification summary (customer, items, payment method, total)
-/// - Approve Order & Charge via Xendit Test Mode (`approve-and-charge-order`)
-/// - Reject Order with mandatory reason (`reject_order`)
-/// - Realtime subscription waiting for Xendit webhook -> "Pesanan Diterima & Pembayaran Berhasil"
+/// Tactile Paper Level 3 Order Verification Bottom Sheet for Cashier.
+/// Preserves Approve/Charge via Xendit, Reject with mandatory reason, and Realtime subscription.
 class OrderVerificationSheet extends StatefulWidget {
   final OrderModel initialOrder;
   final VoidCallback onCompleted;
@@ -186,121 +181,140 @@ class _OrderVerificationSheetState extends State<OrderVerificationSheet> {
     final isExpired = _order.isExpiredNow;
     final alreadyDone = _order.status == OrderStatus.paidAccepted ||
         _order.status == OrderStatus.rejected;
+    final effectiveStatus = isExpired ? OrderStatus.expired : _order.status;
 
     return SafeArea(
-      child: Center(
+      top: false,
+      child: Align(
+        alignment: Alignment.bottomCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: GlassContainer(
-            tier: GlassTier.level3,
-            borderRadius: 20,
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(22),
+          constraints: BoxConstraints(
+            maxWidth: 560,
+            maxHeight: MediaQuery.of(context).size.height * 0.90,
+          ),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceCard,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 22),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.borderStrong,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
                   Row(
                     children: [
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Verifikasi Pesanan',
-                                style: theme.textTheme.headlineSmall),
-                            const SizedBox(height: 2),
-                            Text(
-                              _order.orderCode,
-                              style: AppFormatters.tabular(
-                                theme.textTheme.bodyMedium?.copyWith(
-                                  color: AppColors.primaryTonal,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          'Verifikasi Pesanan',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                      GlassStatusBadge(
-                        status: isExpired ? OrderStatus.expired : _order.status,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.ctaDark,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          _order.orderCode,
+                          style: AppFormatters.tabular(
+                            const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-
-                  // Order Metadata
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.04),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.borderGlassSubtle),
-                    ),
-                    child: Column(
-                      children: [
-                        _MetaRow(
-                          label: 'Pemesan',
-                          value: _order.customerName ?? 'Pengunjung',
-                        ),
-                        const SizedBox(height: 6),
-                        _MetaRow(
-                          label: 'Metode Bayar',
-                          value: _order.paymentMethodLabel,
-                        ),
-                        const SizedBox(height: 6),
-                        _MetaRow(
-                          label: 'Waktu Pesan',
-                          value: AppFormatters.dateTimeWib(_order.createdAt),
-                        ),
-                        if (_order.payment?.gatewayReference != null) ...[
-                          const SizedBox(height: 6),
-                          _MetaRow(
-                            label: 'Referensi Xendit',
-                            value: _order.payment!.gatewayReference!,
-                          ),
-                        ],
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 10),
-                          child: Divider(),
-                        ),
-                        ..._order.items.map(
-                          (item) => Padding(
-                            padding: const EdgeInsets.only(bottom: 6),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    '${item.quantity}x ${item.menuNameSnapshot}',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                                Text(
-                                  AppFormatters.rupiah(item.subtotal),
-                                  style: AppFormatters.tabular(
-                                    theme.textTheme.bodyMedium,
-                                  ),
-                                ),
-                              ],
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.person_outline_rounded,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          '${_order.customerName ?? 'Pengunjung'} • ${AppFormatters.timeWib(_order.createdAt)}',
+                          style: AppFormatters.tabular(
+                            theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 10),
-                          child: Divider(),
+                      ),
+                      GlassStatusBadge(status: effectiveStatus, compact: true),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Payment & Total Summary Box
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.bgCanvas,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.borderSubtle),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _order.paymentMethodLabel,
+                                style: theme.textTheme.labelLarge,
+                              ),
+                              if (_order.payment?.gatewayReference != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Ref: ${_order.payment!.gatewayReference!}',
+                                  style: AppFormatters.tabular(
+                                    theme.textTheme.bodySmall,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text('Total Tagihan',
-                                style: theme.textTheme.titleMedium),
+                            Text(
+                              'Total Tagihan',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
                             Text(
                               AppFormatters.rupiah(_order.totalAmount),
                               style: AppFormatters.tabular(
                                 theme.textTheme.titleLarge?.copyWith(
-                                  color: AppColors.tertiaryLight,
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
@@ -311,36 +325,99 @@ class _OrderVerificationSheetState extends State<OrderVerificationSheet> {
                   ),
 
                   const SizedBox(height: 16),
+                  Text(
+                    'Item Pesanan (${_order.items.length})',
+                    style: theme.textTheme.labelLarge,
+                  ),
+                  const SizedBox(height: 8),
+
+                  ..._order.items.map(
+                    (item) => Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.bgCanvas,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.borderSubtle),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceCard,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.borderDefault),
+                            ),
+                            child: Text(
+                              '${item.quantity}x',
+                              style: AppFormatters.tabular(
+                                theme.textTheme.labelMedium,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              item.menuNameSnapshot,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            AppFormatters.rupiah(item.subtotal),
+                            style: AppFormatters.tabular(
+                              theme.textTheme.labelLarge,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
 
                   if (_error != null) ...[
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.statusRejectedBg,
+                        color: AppColors.semanticErrorSoft,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                            color: AppColors.error.withValues(alpha: 0.45)),
+                        border: Border.all(color: AppColors.statusErrorBorder),
                       ),
                       child: Text(
                         _error!,
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(color: AppColors.errorTonal),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: AppColors.semanticError,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
                   ],
 
                   if (isExpired)
-                    _WarningBanner(
+                    const _WarningBanner(
                       icon: Icons.timer_off_rounded,
-                      color: AppColors.errorLight,
+                      bg: AppColors.semanticErrorSoft,
+                      border: AppColors.statusErrorBorder,
+                      fg: AppColors.semanticError,
                       text:
                           'QR Pesanan telah kedaluwarsa. Minta pengunjung membuat pesanan baru.',
                     )
                   else if (alreadyDone)
                     _WarningBanner(
                       icon: Icons.info_outline_rounded,
-                      color: AppColors.tertiaryLight,
+                      bg: AppColors.semanticWarningSoft,
+                      border: AppColors.statusPendingBorder,
+                      fg: AppColors.statusPendingText,
                       text:
                           'Pesanan sudah diproses/selesai (${_order.status.label}). Double-scan ditolak.',
                     )
@@ -348,10 +425,10 @@ class _OrderVerificationSheetState extends State<OrderVerificationSheet> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.statusProcessingBg,
+                        color: AppColors.statusProcessingSoft,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.45),
+                          color: AppColors.statusProcessingBorder,
                         ),
                       ),
                       child: Column(
@@ -361,14 +438,16 @@ class _OrderVerificationSheetState extends State<OrderVerificationSheet> {
                             height: 28,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
-                              color: AppColors.primaryTonal,
+                              color: AppColors.statusProcessingText,
                             ),
                           ),
                           const SizedBox(height: 12),
                           Text(
                             'Menunggu Konfirmasi Webhook Xendit...',
                             textAlign: TextAlign.center,
-                            style: theme.textTheme.titleMedium,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: AppColors.statusProcessingText,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -386,7 +465,7 @@ class _OrderVerificationSheetState extends State<OrderVerificationSheet> {
                       GlassPrimaryButton(
                         label: 'Simulasi Pelunasan (Xendit Test Mode)',
                         icon: Icons.bolt_rounded,
-                        customColor: AppColors.secondary,
+                        customColor: AppColors.semanticSuccess,
                         loading: _simulating,
                         onPressed: _simulatePayment,
                       ),
@@ -424,7 +503,7 @@ class _OrderVerificationSheetState extends State<OrderVerificationSheet> {
                           Expanded(
                             child: GlassPrimaryButton(
                               label: 'Konfirmasi Tolak',
-                              customColor: AppColors.error,
+                              customColor: AppColors.semanticError,
                               loading: _rejecting,
                               onPressed: _rejectOrder,
                             ),
@@ -435,7 +514,6 @@ class _OrderVerificationSheetState extends State<OrderVerificationSheet> {
                       GlassPrimaryButton(
                         label: 'Setujui Pesanan & Pembayaran',
                         icon: Icons.check_circle_outline_rounded,
-                        customColor: AppColors.secondary,
                         loading: _approving,
                         onPressed: _approveOrder,
                       ),
@@ -468,44 +546,18 @@ class _OrderVerificationSheetState extends State<OrderVerificationSheet> {
   }
 }
 
-class _MetaRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _MetaRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: theme.textTheme.bodyMedium),
-        const SizedBox(width: 12),
-        Flexible(
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: AppFormatters.tabular(
-              theme.textTheme.bodyMedium?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _WarningBanner extends StatelessWidget {
   final IconData icon;
-  final Color color;
+  final Color bg;
+  final Color border;
+  final Color fg;
   final String text;
 
   const _WarningBanner({
     required this.icon,
-    required this.color,
+    required this.bg,
+    required this.border,
+    required this.fg,
     required this.text,
   });
 
@@ -514,21 +566,20 @@ class _WarningBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
+        color: bg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
+        border: Border.all(color: border),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color),
+          Icon(icon, color: fg),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: AppColors.textPrimary),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
             ),
           ),
         ],

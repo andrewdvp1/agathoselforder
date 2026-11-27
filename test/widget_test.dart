@@ -108,7 +108,7 @@ void main() {
       (WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: ThemeData.dark(),
+        theme: ThemeData.light(),
         home: GlassScaffold(
           showTertiaryOrb: true,
           body: SingleChildScrollView(
@@ -148,7 +148,7 @@ void main() {
       return dec is BoxDecoration && dec.color == const Color(0xFFFFFFFF);
     });
     expect(whiteContainers.isNotEmpty, isTrue);
-    expect(AppColors.bgCanvas, const Color(0xFF0F172A));
+    expect(AppColors.bgCanvas, const Color(0xFFF7F8FA));
   });
 
   test('SupabaseConfig validates Supabase Cloud HTTPS configuration cleanly', () {

@@ -5,9 +5,8 @@ import '../utils/formatters.dart';
 import 'glass_container.dart';
 import 'glass_progress_bar.dart';
 
-/// Mandatory Reusable Widget #4: QrDisplayCard
-/// Wraps QrImageView inside a PURE WHITE (#FFFFFF) solid container with >=16px
-/// quiet zone and #000000 QR modules to guarantee 100% scan reliability on dark UI.
+/// QR Presentation Card with PURE WHITE (#FFFFFF) quiet zone >= 16px
+/// and #000000 QR modules on crisp tactile paper card surface.
 class QrDisplayCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -40,28 +39,35 @@ class QrDisplayCard extends StatelessWidget {
     final double progress = remainingDuration != null && totalDuration.inSeconds > 0
         ? (remainingDuration!.inSeconds / totalDuration.inSeconds).clamp(0.0, 1.0)
         : 0.0;
+    final isUrgent = remainingDuration != null && remainingDuration!.inSeconds <= 60;
 
     return GlassContainer(
-      tier: GlassTier.level2,
+      tier: GlassTier.level1,
       borderRadius: 20,
       padding: const EdgeInsets.all(20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: theme.textTheme.titleLarge),
+                    Text(
+                      title,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       orderCode,
                       style: AppFormatters.tabular(
-                        theme.textTheme.bodyMedium?.copyWith(
-                          color: AppColors.primaryTonal,
-                          fontWeight: FontWeight.w600,
+                        theme.textTheme.titleLarge?.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -71,11 +77,6 @@ class QrDisplayCard extends StatelessWidget {
               ?badge,
             ],
           ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(subtitle, style: theme.textTheme.bodyMedium),
-          ),
           const SizedBox(height: 18),
           // CRITICAL: Pure White (#FFFFFF) Quiet Zone >= 16px, Black (#000000) QR Modules
           Container(
@@ -83,11 +84,12 @@ class QrDisplayCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFFFFFFFF),
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.borderDefault),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
+                  color: const Color(0xFF1F2933).withValues(alpha: 0.05),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
@@ -124,6 +126,12 @@ class QrDisplayCard extends StatelessWidget {
           ),
           if (remainingDuration != null) ...[
             const SizedBox(height: 16),
+            GlassProgressBar(
+              value: progress,
+              variant: GlassProgressVariant.tertiary,
+              height: 6,
+            ),
+            const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -136,21 +144,47 @@ class QrDisplayCard extends StatelessWidget {
                 Text(
                   AppFormatters.countdown(remainingDuration!),
                   style: AppFormatters.tabular(
-                    theme.textTheme.labelLarge?.copyWith(
-                      color: remainingDuration!.inSeconds <= 60
-                          ? AppColors.errorLight
-                          : AppColors.tertiaryLight,
+                    theme.textTheme.labelMedium?.copyWith(
+                      color: isUrgent
+                          ? AppColors.semanticError
+                          : AppColors.accentTerracotta,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            GlassProgressBar(
-              value: progress,
-              variant: GlassProgressVariant.tertiary,
-            ),
           ],
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.bgCanvas,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.borderSubtle),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.info_outline_rounded,
+                  size: 16,
+                  color: AppColors.slateHeader,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           if (footer != null) ...[
             const SizedBox(height: 16),
             footer!,

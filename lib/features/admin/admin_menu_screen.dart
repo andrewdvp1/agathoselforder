@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/glass_buttons.dart';
 import '../../core/widgets/glass_container.dart';
+import '../../core/widgets/pos_header.dart';
 import '../../models/menu_item.dart';
 import '../../services/menu_service.dart';
 
@@ -76,7 +77,7 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
   Future<void> openCreateOrEditDialog({MenuItem? editing}) async {
     final saved = await showDialog<bool>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.65),
+      barrierColor: const Color(0x730F172A),
       builder: (_) => _MenuCrudDialog(
         menuService: _menuService,
         editing: editing,
@@ -90,21 +91,43 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
   Future<void> _confirmSoftDelete(MenuItem menu) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.65),
+      barrierColor: const Color(0x730F172A),
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 400),
           child: GlassContainer(
             tier: GlassTier.level3,
+            borderRadius: 20,
             padding: const EdgeInsets.all(22),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Arsipkan Menu (Soft Delete)?',
-                    style: Theme.of(ctx).textTheme.titleLarge),
-                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
+                        color: AppColors.semanticErrorSoft,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.delete_outline_rounded,
+                        color: AppColors.semanticError,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Arsipkan Menu?',
+                        style: Theme.of(ctx).textTheme.titleLarge,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
                 Text(
                   'Menu "${menu.name}" akan disembunyikan dari katalog pengunjung, namun riwayat transaksi lama tetap utuh.',
                   style: Theme.of(ctx).textTheme.bodyMedium,
@@ -122,7 +145,7 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
                     Expanded(
                       child: GlassPrimaryButton(
                         label: 'Hapus Menu',
-                        customColor: AppColors.error,
+                        customColor: AppColors.semanticError,
                         onPressed: () => Navigator.of(ctx).pop(true),
                       ),
                     ),
@@ -139,28 +162,122 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
       await _menuService.softDeleteMenu(menu.id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Menu "${menu.name}" berhasil dihapus (soft delete).')),
+        SnackBar(
+          content: Text('Menu "${menu.name}" berhasil dihapus (soft delete).'),
+        ),
       );
       await _loadMenus();
     }
+  }
+
+  Widget _buildSearchCapsule({required bool elevated}) {
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.fromLTRB(16, 4, 5, 4),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: elevated ? AppColors.borderDefault : AppColors.borderInput,
+        ),
+        boxShadow: elevated
+            ? [
+                BoxShadow(
+                  color: const Color(0xFF1F2933).withValues(alpha: 0.09),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
+                ),
+              ]
+            : null,
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.search_rounded,
+            size: 20,
+            color: AppColors.textMuted,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: _searchCtrl,
+              onChanged: (v) => setState(() => _search = v),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+              decoration: const InputDecoration(
+                hintText: 'Cari nama atau deskripsi menu...',
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+          if (_search.isNotEmpty)
+            IconButton(
+              onPressed: () {
+                _searchCtrl.clear();
+                setState(() => _search = '');
+              },
+              icon: const Icon(Icons.close_rounded, size: 18),
+            )
+          else if (elevated)
+            Container(
+              width: 38,
+              height: 38,
+              decoration: const BoxDecoration(
+                color: AppColors.accentTerracotta,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.search_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isMobile = MediaQuery.of(context).size.width < 600;
+    final activeCount =
+        _menus.where((m) => !m.isDeleted && m.isActive).length;
+    final archivedOrInactiveCount =
+        _menus.where((m) => m.isDeleted || !m.isActive).length;
 
-    return SafeArea(
-      child: Stack(
-        children: [
-          RefreshIndicator(
-            color: AppColors.primary,
-            backgroundColor: AppColors.surfaceBase,
-            onRefresh: _loadMenus,
-            child: CustomScrollView(
-              slivers: [
+    return Stack(
+      children: [
+        RefreshIndicator(
+          color: AppColors.accentTerracotta,
+          backgroundColor: AppColors.surfaceCard,
+          onRefresh: _loadMenus,
+          child: CustomScrollView(
+            slivers: [
+              if (isMobile)
+                SliverToBoxAdapter(
+                  child: PosSlateHeader(
+                    eyebrow: 'KATALOG PRODUK • CRUD',
+                    title: 'Manajemen Menu',
+                    subtitle: 'Kelola menu, foto Supabase Storage (<= 2 MB) & harga.',
+                    trailing: PosHeaderIconButton(
+                      icon: Icons.refresh_rounded,
+                      tooltip: 'Muat ulang',
+                      onPressed: _loadMenus,
+                    ),
+                    straddleOverlap: 24,
+                    straddlingChild: _buildSearchCapsule(elevated: true),
+                  ),
+                )
+              else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                  padding: const EdgeInsets.fromLTRB(24, 22, 24, 10),
                   sliver: SliverToBoxAdapter(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,59 +288,24 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Manajemen Menu (CRUD)',
-                                      style: theme.textTheme.headlineMedium),
+                                  Text(
+                                    'Manajemen Katalog Menu (CRUD)',
+                                    style: theme.textTheme.headlineMedium,
+                                  ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Kelola nama, gambar (Supabase Storage <= 2 MB), deskripsi, dan harga.',
+                                    'Kelola nama, gambar (Supabase Storage <= 2 MB), deskripsi, dan harga secara real-time.',
                                     style: theme.textTheme.bodyMedium,
                                   ),
                                 ],
                               ),
                             ),
-                            if (!isMobile)
-                              GlassPrimaryButton(
-                                label: 'Tambah Menu',
-                                icon: Icons.add_rounded,
-                                expand: false,
-                                onPressed: () => openCreateOrEditDialog(),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _searchCtrl,
-                                onChanged: (v) => setState(() => _search = v),
-                                decoration: const InputDecoration(
-                                  hintText: 'Cari nama atau deskripsi menu...',
-                                  prefixIcon: Icon(Icons.search_rounded),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            _FilterChipPill(
-                              label: 'Aktif',
-                              selected: _filter == 'active',
-                              onTap: () => setState(() => _filter = 'active'),
-                            ),
-                            _FilterChipPill(
-                              label: 'Semua Menu',
-                              selected: _filter == 'all',
-                              onTap: () => setState(() => _filter = 'all'),
-                            ),
-                            _FilterChipPill(
-                              label: 'Arsip / Terhapus',
-                              selected: _filter == 'deleted',
-                              onTap: () => setState(() => _filter = 'deleted'),
+                            const SizedBox(width: 12),
+                            GlassPrimaryButton(
+                              label: 'Tambah Menu',
+                              icon: Icons.add_rounded,
+                              expand: false,
+                              onPressed: () => openCreateOrEditDialog(),
                             ),
                           ],
                         ),
@@ -231,162 +313,436 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
                     ),
                   ),
                 ),
-                if (_loading)
-                  const SliverFillRemaining(
-                    child: Center(
-                        child:
-                            CircularProgressIndicator(color: AppColors.primary)),
-                  )
-                else if (_error != null)
-                  SliverFillRemaining(child: Center(child: Text(_error!)))
-                else if (_filteredMenus.isEmpty)
-                  SliverFillRemaining(
-                    child: Center(
-                      child: Text('Tidak ada menu pada filter ini.',
-                          style: theme.textTheme.bodyLarge),
-                    ),
-                  )
-                else
-                  SliverPadding(
-                    padding: EdgeInsets.fromLTRB(
-                        20, 6, 20, isMobile ? 165 : 40),
-                    sliver: SliverList.separated(
-                      itemCount: _filteredMenus.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final menu = _filteredMenus[index];
-                        return GlassContainer(
+
+              // Filter Bar + Summary Strip
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  isMobile ? 20 : 24,
+                  isMobile ? 16 : 8,
+                  isMobile ? 20 : 24,
+                  10,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (!isMobile) ...[
+                        GlassContainer(
                           tier: GlassTier.level1,
-                          enableBlur: false, // Pseudo-Glass 60 FPS
-                          padding: const EdgeInsets.all(14),
+                          padding: const EdgeInsets.all(12),
                           child: Row(
                             children: [
-                              // Thumbnail
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  width: 68,
-                                  height: 68,
-                                  color: AppColors.bgCanvasDeep,
-                                  child: menu.imageUrl != null
-                                      ? Image.network(
-                                          menu.imageUrl!,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, _, _) =>
-                                              const Icon(
-                                                  Icons.fastfood_rounded,
-                                                  color:
-                                                      AppColors.primaryTonal),
-                                        )
-                                      : const Icon(Icons.restaurant_rounded,
-                                          color: AppColors.primaryTonal),
-                                ),
-                              ),
-                              const SizedBox(width: 14),
                               Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                child: _buildSearchCapsule(elevated: false),
+                              ),
+                              const SizedBox(width: 12),
+                              _SummaryPill(
+                                label: 'Aktif: $activeCount',
+                                bg: AppColors.semanticSuccessSoft,
+                                fg: AppColors.semanticSuccess,
+                              ),
+                              const SizedBox(width: 8),
+                              _SummaryPill(
+                                label: 'Nonaktif/Arsip: $archivedOrInactiveCount',
+                                bg: AppColors.semanticWarningSoft,
+                                fg: AppColors.statusPendingText,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ] else ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              child: GlassContainer(
+                                tier: GlassTier.level1,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Row(
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        Flexible(
-                                          child: Text(
-                                            menu.name,
-                                            style: theme.textTheme.titleMedium,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
+                                        Text(
+                                          'Total Aktif',
+                                          style: theme.textTheme.bodySmall,
                                         ),
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 8, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: menu.isDeleted
-                                                ? AppColors.statusRejectedBg
-                                                : (menu.isActive
-                                                    ? AppColors.statusPaidBg
-                                                    : AppColors.statusExpiredBg),
-                                            borderRadius:
-                                                BorderRadius.circular(999),
-                                          ),
-                                          child: Text(
-                                            menu.isDeleted
-                                                ? 'Terhapus'
-                                                : (menu.isActive
-                                                    ? 'Aktif'
-                                                    : 'Nonaktif'),
-                                            style: theme.textTheme.labelMedium
+                                        Text(
+                                          '$activeCount Menu',
+                                          style: AppFormatters.tabular(
+                                            theme.textTheme.titleMedium
                                                 ?.copyWith(
-                                              fontSize: 10,
-                                              color: menu.isDeleted
-                                                  ? AppColors.errorLight
-                                                  : (menu.isActive
-                                                      ? AppColors.secondaryLight
-                                                      : AppColors.textSecondary),
+                                              fontWeight: FontWeight.w700,
                                             ),
                                           ),
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      menu.description,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      AppFormatters.rupiah(menu.price),
-                                      style: AppFormatters.tabular(
-                                        theme.textTheme.titleMedium?.copyWith(
-                                          color: AppColors.tertiaryLight,
-                                          fontSize: 14,
-                                        ),
-                                      ),
+                                    const Icon(
+                                      Icons.inventory_2_outlined,
+                                      size: 20,
+                                      color: AppColors.slateHeader,
                                     ),
                                   ],
                                 ),
                               ),
-                              // Circular Tonal Action Icons (Design System 6.1)
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: GlassContainer(
+                                tier: GlassTier.level1,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Arsip/Nonaktif',
+                                          style: theme.textTheme.bodySmall,
+                                        ),
+                                        Text(
+                                          '$archivedOrInactiveCount Item',
+                                          style: AppFormatters.tabular(
+                                            theme.textTheme.titleMedium
+                                                ?.copyWith(
+                                              color: AppColors.accentTerracotta,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const Icon(
+                                      Icons.archive_outlined,
+                                      size: 20,
+                                      color: AppColors.accentTerracotta,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _FilterChipPill(
+                            label: 'Aktif',
+                            selected: _filter == 'active',
+                            onTap: () => setState(() => _filter = 'active'),
+                          ),
+                          _FilterChipPill(
+                            label: 'Semua Menu (${_menus.length})',
+                            selected: _filter == 'all',
+                            onTap: () => setState(() => _filter = 'all'),
+                          ),
+                          _FilterChipPill(
+                            label: 'Arsip / Terhapus',
+                            selected: _filter == 'deleted',
+                            onTap: () => setState(() => _filter = 'deleted'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              if (_loading)
+                const SliverFillRemaining(
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.accentTerracotta,
+                    ),
+                  ),
+                )
+              else if (_error != null)
+                SliverFillRemaining(child: Center(child: Text(_error!)))
+              else if (_filteredMenus.isEmpty)
+                SliverFillRemaining(
+                  child: Center(
+                    child: Text(
+                      'Tidak ada menu pada filter ini.',
+                      style: theme.textTheme.bodyLarge,
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(
+                    isMobile ? 20 : 24,
+                    6,
+                    isMobile ? 20 : 24,
+                    isMobile ? 96 : 36,
+                  ),
+                  sliver: SliverList.separated(
+                    itemCount: _filteredMenus.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final menu = _filteredMenus[index];
+                      return GlassContainer(
+                        tier: GlassTier.level1,
+                        enableBlur: false,
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Thumbnail
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    width: isMobile ? 68 : 60,
+                                    height: isMobile ? 68 : 60,
+                                    color: AppColors.bgCanvasDeep,
+                                    child: menu.imageUrl != null
+                                        ? Image.network(
+                                            menu.imageUrl!,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, _, _) =>
+                                                const Icon(
+                                              Icons.fastfood_rounded,
+                                              color: AppColors.slateHeader,
+                                            ),
+                                          )
+                                        : const Icon(
+                                            Icons.restaurant_rounded,
+                                            color: AppColors.slateHeader,
+                                          ),
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              menu.name,
+                                              style:
+                                                  theme.textTheme.titleMedium,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: menu.isDeleted
+                                                  ? AppColors.semanticErrorSoft
+                                                  : (menu.isActive
+                                                      ? AppColors
+                                                          .semanticSuccessSoft
+                                                      : AppColors
+                                                          .surfacePillInactive),
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                            ),
+                                            child: Text(
+                                              menu.isDeleted
+                                                  ? 'Terhapus'
+                                                  : (menu.isActive
+                                                      ? 'Aktif'
+                                                      : 'Nonaktif'),
+                                              style: theme.textTheme.labelMedium
+                                                  ?.copyWith(
+                                                fontSize: 10,
+                                                color: menu.isDeleted
+                                                    ? AppColors.semanticError
+                                                    : (menu.isActive
+                                                        ? AppColors
+                                                            .semanticSuccess
+                                                        : AppColors
+                                                            .textSecondary),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        menu.description,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style:
+                                            theme.textTheme.bodySmall?.copyWith(
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                      if (!isMobile) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          AppFormatters.rupiah(menu.price),
+                                          style: AppFormatters.tabular(
+                                            theme.textTheme.titleMedium
+                                                ?.copyWith(
+                                              color: AppColors.textPrimary,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                if (!isMobile) ...[
+                                  const SizedBox(width: 12),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (!menu.isDeleted) ...[
+                                        Switch(
+                                          value: menu.isActive,
+                                          onChanged: (v) async {
+                                            await _menuService.toggleMenuActive(
+                                                menu.id, v);
+                                            await _loadMenus();
+                                          },
+                                        ),
+                                        const SizedBox(width: 6),
+                                        GlassCircularTonalIcon(
+                                          icon: Icons.edit_rounded,
+                                          variant: TonalIconVariant.indigo,
+                                          tooltip: 'Edit menu',
+                                          onPressed: () =>
+                                              openCreateOrEditDialog(
+                                                  editing: menu),
+                                        ),
+                                        GlassCircularTonalIcon(
+                                          icon: Icons.delete_outline_rounded,
+                                          variant: TonalIconVariant.coral,
+                                          tooltip: 'Soft delete menu',
+                                          onPressed: () =>
+                                              _confirmSoftDelete(menu),
+                                        ),
+                                      ] else
+                                        GlassCircularTonalIcon(
+                                          icon: Icons.restore_rounded,
+                                          variant: TonalIconVariant.emerald,
+                                          tooltip: 'Pulihkan menu',
+                                          onPressed: () async {
+                                            await _menuService
+                                                .restoreMenu(menu.id);
+                                            await _loadMenus();
+                                          },
+                                        ),
+                                    ],
+                                  ),
+                                ] else if (!menu.isDeleted)
+                                  Switch(
+                                    value: menu.isActive,
+                                    onChanged: (v) async {
+                                      await _menuService.toggleMenuActive(
+                                          menu.id, v);
+                                      await _loadMenus();
+                                    },
+                                  ),
+                              ],
+                            ),
+                            if (isMobile) ...[
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8),
+                                child: Divider(),
+                              ),
                               Row(
-                                mainAxisSize: MainAxisSize.min,
                                 children: [
+                                  Expanded(
+                                    child: Text(
+                                      AppFormatters.rupiah(menu.price),
+                                      style: AppFormatters.tabular(
+                                        theme.textTheme.titleMedium?.copyWith(
+                                          color: AppColors.textPrimary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                   if (!menu.isDeleted) ...[
-                                    GlassCircularTonalIcon(
-                                      icon: menu.isActive
-                                          ? Icons.visibility_rounded
-                                          : Icons.visibility_off_rounded,
-                                      variant: TonalIconVariant.emerald,
-                                      tooltip: menu.isActive
-                                          ? 'Nonaktifkan sementara'
-                                          : 'Aktifkan menu',
-                                      onPressed: () async {
-                                        await _menuService.toggleMenuActive(
-                                            menu.id, !menu.isActive);
-                                        await _loadMenus();
-                                      },
+                                    MouseRegion(
+                                      cursor: SystemMouseCursors.click,
+                                      child: InkWell(
+                                        onTap: () => openCreateOrEditDialog(
+                                            editing: menu),
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Container(
+                                          height: 36,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                AppColors.surfacePillInactive,
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.edit_outlined,
+                                                size: 16,
+                                                color: AppColors.textPrimary,
+                                              ),
+                                              const SizedBox(width: 5),
+                                              Text(
+                                                'Edit',
+                                                style: theme
+                                                    .textTheme.labelMedium,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                    GlassCircularTonalIcon(
-                                      icon: Icons.edit_rounded,
-                                      variant: TonalIconVariant.amber,
-                                      tooltip: 'Edit menu',
-                                      onPressed: () =>
-                                          openCreateOrEditDialog(editing: menu),
-                                    ),
-                                    GlassCircularTonalIcon(
-                                      icon: Icons.delete_outline_rounded,
-                                      variant: TonalIconVariant.coral,
-                                      tooltip: 'Soft delete menu',
-                                      onPressed: () => _confirmSoftDelete(menu),
+                                    const SizedBox(width: 8),
+                                    MouseRegion(
+                                      cursor: SystemMouseCursors.click,
+                                      child: InkWell(
+                                        onTap: () => _confirmSoftDelete(menu),
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Container(
+                                          width: 36,
+                                          height: 36,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.semanticErrorSoft,
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                          ),
+                                          child: const Icon(
+                                            Icons.delete_outline_rounded,
+                                            size: 18,
+                                            color: AppColors.semanticError,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ] else
-                                    GlassCircularTonalIcon(
+                                    GlassOutlinedButton(
+                                      label: 'Pulihkan',
                                       icon: Icons.restore_rounded,
-                                      variant: TonalIconVariant.emerald,
-                                      tooltip: 'Pulihkan menu',
                                       onPressed: () async {
                                         await _menuService.restoreMenu(menu.id);
                                         await _loadMenus();
@@ -395,27 +751,27 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
                                 ],
                               ),
                             ],
-                          ),
-                        );
-                      },
-                    ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
-              ],
+                ),
+            ],
+          ),
+        ),
+
+        if (isMobile)
+          Positioned(
+            right: 20,
+            bottom: 16,
+            child: GlassExtendedPrimaryFab(
+              label: 'Tambah Menu',
+              icon: Icons.add_rounded,
+              onPressed: () => openCreateOrEditDialog(),
             ),
           ),
-
-          if (isMobile)
-            Positioned(
-              right: 20,
-              bottom: 94,
-              child: GlassExtendedPrimaryFab(
-                label: 'Tambah Menu',
-                icon: Icons.add_rounded,
-                onPressed: () => openCreateOrEditDialog(),
-              ),
-            ),
-        ],
-      ),
+      ],
     );
   }
 }
@@ -489,7 +845,8 @@ class _MenuCrudDialogState extends State<_MenuCrudDialog> {
     setState(() => _error = null);
     if (!_formKey.currentState!.validate()) return;
 
-    final price = int.tryParse(_priceCtrl.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+    final price =
+        int.tryParse(_priceCtrl.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
     if (price <= 0) {
       setState(() => _error = 'Harga harus berupa bilangan Rupiah positif.');
       return;
@@ -538,11 +895,11 @@ class _MenuCrudDialogState extends State<_MenuCrudDialog> {
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(16),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 500),
+        constraints: const BoxConstraints(maxWidth: 520),
         child: GlassContainer(
           tier: GlassTier.level3,
           borderRadius: 20,
-          padding: const EdgeInsets.all(22),
+          padding: EdgeInsets.zero,
           child: SingleChildScrollView(
             child: Form(
               key: _formKey,
@@ -550,147 +907,307 @@ class _MenuCrudDialogState extends State<_MenuCrudDialog> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          isEdit ? 'Edit Menu' : 'Tambah Menu Baru',
-                          style: theme.textTheme.headlineSmall,
+                  // Slate Blue Modal Header Cap
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(22, 16, 14, 16),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [AppColors.slateHeader, Color(0xFF273E4C)],
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: AppColors.accentTerracotta,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            isEdit
+                                ? Icons.edit_note_rounded
+                                : Icons.add_business_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                         ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        icon: const Icon(Icons.close_rounded),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Cross-platform Image Picker Preview
-                  MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: GestureDetector(
-                      onTap: _pickImage,
-                      child: Container(
-                        height: 160,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceInput,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.borderGlassInput),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            isEdit ? 'Edit Menu' : 'Tambah Menu Baru',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
-                        clipBehavior: Clip.antiAlias,
-                        child: _pickedBytes != null
-                            ? Image.memory(_pickedBytes!, fit: BoxFit.cover)
-                            : (widget.editing?.imageUrl != null
-                                ? Image.network(widget.editing!.imageUrl!,
-                                    fit: BoxFit.cover)
-                                : Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                          Icons.add_photo_alternate_outlined,
-                                          size: 38,
-                                          color: AppColors.primaryTonal),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'Unggah Gambar Menu (JPG/PNG/WebP, maks 2 MB)',
-                                        textAlign: TextAlign.center,
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(
-                                                color: AppColors.textSecondary),
-                                      ),
-                                    ],
-                                  )),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  TextFormField(
-                    controller: _nameCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Nama Menu',
-                      hintText: 'Contoh: Kopi Susu Gula Aren',
-                    ),
-                    validator: (v) => (v == null || v.trim().length < 2)
-                        ? 'Nama menu wajib diisi'
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
-
-                  TextFormField(
-                    controller: _priceCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Harga (Rupiah)',
-                      hintText: '25000',
-                      prefixText: 'Rp ',
-                    ),
-                    validator: (v) {
-                      final n = int.tryParse(
-                              (v ?? '').replaceAll(RegExp(r'[^0-9]'), '')) ??
-                          0;
-                      if (n <= 0) return 'Harga wajib bilangan positif';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-
-                  TextFormField(
-                    controller: _descCtrl,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Deskripsi Menu',
-                      hintText: 'Jelaskan bahan, rasa, atau porsi menu...',
-                    ),
-                    validator: (v) => (v == null || v.trim().isEmpty)
-                        ? 'Deskripsi menu wajib diisi'
-                        : null,
-                  ),
-                  const SizedBox(height: 10),
-
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _isActive,
-                    activeThumbColor: AppColors.secondary,
-                    title: Text('Tampilkan di Katalog Pengunjung',
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(color: AppColors.textPrimary)),
-                    onChanged: (v) => setState(() => _isActive = v),
-                  ),
-
-                  if (_error != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      _error!,
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: AppColors.errorTonal),
-                    ),
-                  ],
-
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: GlassOutlinedButton(
-                          label: 'Batal',
+                        IconButton(
                           onPressed: () => Navigator.of(context).pop(false),
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: GlassPrimaryButton(
-                          label: isEdit ? 'Simpan Perubahan' : 'Buat Menu',
-                          loading: _saving,
-                          onPressed: _save,
+                      ],
+                    ),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.all(22),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Cross-platform Image Picker Preview
+                        MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: _pickImage,
+                            child: Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: AppColors.bgCanvas,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: AppColors.borderStrong,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      width: 84,
+                                      height: 84,
+                                      color: AppColors.bgCanvasDeep,
+                                      child: _pickedBytes != null
+                                          ? Image.memory(
+                                              _pickedBytes!,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : (widget.editing?.imageUrl != null
+                                              ? Image.network(
+                                                  widget.editing!.imageUrl!,
+                                                  fit: BoxFit.cover,
+                                                )
+                                              : const Icon(
+                                                  Icons
+                                                      .add_photo_alternate_outlined,
+                                                  size: 32,
+                                                  color: AppColors.slateHeader,
+                                                )),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _pickedBytes != null ||
+                                                  widget.editing?.imageUrl !=
+                                                      null
+                                              ? 'Foto Menu Terpilih'
+                                              : 'Unggah Gambar Menu',
+                                          style: theme.textTheme.labelLarge,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'JPG, PNG, WebP (Maks. 2 MB)',
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.surfaceCard,
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            border: Border.all(
+                                              color: AppColors.borderDefault,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(
+                                                Icons.upload_rounded,
+                                                size: 15,
+                                                color: AppColors.slateHeader,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                _pickedBytes != null ||
+                                                        widget.editing
+                                                                ?.imageUrl !=
+                                                            null
+                                                    ? 'Ganti Foto'
+                                                    : 'Pilih Foto',
+                                                style:
+                                                    theme.textTheme.labelMedium,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+
+                        TextFormField(
+                          controller: _nameCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Nama Menu',
+                            hintText: 'Contoh: Kopi Susu Gula Aren',
+                          ),
+                          validator: (v) => (v == null || v.trim().length < 2)
+                              ? 'Nama menu wajib diisi'
+                              : null,
+                        ),
+                        const SizedBox(height: 12),
+
+                        TextFormField(
+                          controller: _priceCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Harga (Rupiah)',
+                            hintText: '25000',
+                            prefixText: 'Rp ',
+                          ),
+                          validator: (v) {
+                            final n = int.tryParse(
+                                    (v ?? '').replaceAll(RegExp(r'[^0-9]'), '')) ??
+                                0;
+                            if (n <= 0) return 'Harga wajib bilangan positif';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+
+                        TextFormField(
+                          controller: _descCtrl,
+                          maxLines: 3,
+                          decoration: const InputDecoration(
+                            labelText: 'Deskripsi Menu',
+                            hintText: 'Jelaskan bahan, rasa, atau porsi menu...',
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'Deskripsi menu wajib diisi'
+                              : null,
+                        ),
+                        const SizedBox(height: 14),
+
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.bgCanvas,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.borderSubtle),
+                          ),
+                          child: SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            value: _isActive,
+                            title: Text(
+                              'Status Ketersediaan',
+                              style: theme.textTheme.labelLarge,
+                            ),
+                            subtitle: Text(
+                              _isActive
+                                  ? 'Tersedia di Katalog Pengunjung'
+                                  : 'Disembunyikan sementara',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: _isActive
+                                    ? AppColors.semanticSuccess
+                                    : AppColors.textSecondary,
+                              ),
+                            ),
+                            onChanged: (v) => setState(() => _isActive = v),
+                          ),
+                        ),
+
+                        if (_error != null) ...[
+                          const SizedBox(height: 10),
+                          Text(
+                            _error!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.semanticError,
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: 18),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: GlassOutlinedButton(
+                                label: 'Batal',
+                                onPressed: () =>
+                                    Navigator.of(context).pop(false),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: GlassPrimaryButton(
+                                label: isEdit ? 'Simpan Menu' : 'Buat Menu',
+                                icon: Icons.check_rounded,
+                                loading: _saving,
+                                onPressed: _save,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryPill extends StatelessWidget {
+  final String label;
+  final Color bg;
+  final Color fg;
+
+  const _SummaryPill({
+    required this.label,
+    required this.bg,
+    required this.fg,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: AppFormatters.tabular(
+          Theme.of(context).textTheme.labelMedium?.copyWith(color: fg),
         ),
       ),
     );
@@ -714,22 +1231,24 @@ class _FilterChipPill extends StatelessWidget {
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: selected
-                ? AppColors.primaryTonal
-                : Colors.white.withValues(alpha: 0.06),
+                ? AppColors.accentTerracotta
+                : AppColors.surfaceCard,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: selected ? AppColors.primary : AppColors.borderGlassSubtle,
+              color: selected
+                  ? AppColors.accentTerracotta
+                  : AppColors.borderDefault,
             ),
           ),
           child: Text(
             label,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color:
-                      selected ? AppColors.primaryOnTonal : AppColors.textPrimary,
+                  color: selected ? Colors.white : AppColors.textPrimary,
                 ),
           ),
         ),

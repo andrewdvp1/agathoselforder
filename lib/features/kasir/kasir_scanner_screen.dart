@@ -61,6 +61,7 @@ class _KasirScannerScreenState extends State<KasirScannerScreen> {
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
+        barrierColor: const Color(0x730F172A),
         builder: (_) => OrderVerificationSheet(
           initialOrder: order,
           onCompleted: widget.onOrderProcessed,
@@ -70,7 +71,7 @@ class _KasirScannerScreenState extends State<KasirScannerScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: AppColors.error,
+          backgroundColor: AppColors.semanticError,
           content: Text(
             e.toString().replaceFirst('Exception: ', ''),
             style: const TextStyle(color: Colors.white),
@@ -94,7 +95,7 @@ class _KasirScannerScreenState extends State<KasirScannerScreen> {
     final ctrl = TextEditingController();
     final submitted = await showDialog<String>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.65),
+      barrierColor: const Color(0x730F172A),
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
         child: ConstrainedBox(
@@ -107,11 +108,31 @@ class _KasirScannerScreenState extends State<KasirScannerScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'Input Kode Pesanan Manual',
-                  style: Theme.of(ctx).textTheme.titleLarge,
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColors.accentSoft,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.keyboard_alt_outlined,
+                        color: AppColors.accentTerracotta,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Input Kode Pesanan Manual',
+                        style: Theme.of(ctx).textTheme.titleLarge,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 10),
                 Text(
                   'Masukkan nomor pesanan (contoh: ORD-SEED-005) atau QR token jika kamera tidak tersedia.',
                   style: Theme.of(ctx).textTheme.bodyMedium,
@@ -125,7 +146,7 @@ class _KasirScannerScreenState extends State<KasirScannerScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Order Code / QR Token',
                     hintText: 'ORD-YYYYMMDD-XXXXX',
-                    prefixIcon: Icon(Icons.keyboard_alt_outlined),
+                    prefixIcon: Icon(Icons.qr_code_2_rounded),
                   ),
                 ),
                 const SizedBox(height: 18),
@@ -174,9 +195,9 @@ class _KasirScannerScreenState extends State<KasirScannerScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isMobile = MediaQuery.of(context).size.width < 600;
-    final frameColor =
-        _qrDetectedHighlight ? AppColors.secondary : AppColors.primary;
+    final frameColor = _qrDetectedHighlight
+        ? AppColors.semanticSuccess
+        : AppColors.accentTerracotta;
 
     return Stack(
       fit: StackFit.expand,
@@ -204,7 +225,7 @@ class _KasirScannerScreenState extends State<KasirScannerScreen> {
           },
         ),
 
-        // 2. Semi-Transparent Dark Cutout Overlay + Corner Brackets
+        // 2. Translucent Charcoal Backdrop + Terracotta / Emerald Corner Reticle
         IgnorePointer(
           child: CustomPaint(
             painter: _ScannerOverlayPainter(bracketColor: frameColor),
@@ -212,97 +233,166 @@ class _KasirScannerScreenState extends State<KasirScannerScreen> {
           ),
         ),
 
-        // 3. Top Header Overlay
-        SafeArea(
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
-                child: GlassContainer(
-                  tier: GlassTier.level2,
-                  borderRadius: 16,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.qr_code_scanner_rounded,
-                        color: frameColor,
+        // 3. Top Deep Slate Blue Command Bar
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.slateHeader, Color(0xFF273E4C)],
+              ),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Icon(
+                        Icons.qr_code_scanner_rounded,
+                        color: _qrDetectedHighlight
+                            ? AppColors.semanticSuccess
+                            : Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Pindai QR Code Pesanan',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            _processingScan
+                                ? 'Memverifikasi data pesanan...'
+                                : 'Arahkan kamera ke QR pengunjung',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.onSlateMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_processingScan)
+                      const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          color: Colors.white,
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.semanticSuccess.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: AppColors.semanticSuccess.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              'Pindai QR Code Pesanan',
-                              style: theme.textTheme.titleMedium,
+                            Icon(
+                              Icons.videocam_rounded,
+                              size: 13,
+                              color: Color(0xFF86EFAC),
                             ),
+                            SizedBox(width: 5),
                             Text(
-                              _processingScan
-                                  ? 'Memverifikasi data pesanan...'
-                                  : 'Arahkan kamera ke QR pengunjung untuk verifikasi',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: AppColors.textSecondary,
+                              'Kamera Siap',
+                              style: TextStyle(
+                                color: Color(0xFFDCFCE7),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      if (_processingScan)
-                        const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.secondaryLight,
-                          ),
-                        ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
             ),
           ),
         ),
 
-        // 4. Floating Glass Level 2 Bottom Action Panel (Flash + Manual Order Code)
+        // 4. Floating Bottom Action Controls (Flash + Input Kode Manual)
         Positioned(
           left: 20,
           right: 20,
-          bottom: isMobile ? 96 : 24,
+          bottom: 18,
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: GlassContainer(
-                tier: GlassTier.level2,
-                borderRadius: 18,
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    if (!kIsWeb) ...[
-                      GlassSecondaryButton(
-                        label: _torchOn ? 'Flash On' : 'Flash',
-                        icon: _torchOn
-                            ? Icons.flash_on_rounded
-                            : Icons.flash_off_rounded,
-                        onPressed: _toggleTorch,
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (!kIsWeb) ...[
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: _toggleTorch,
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: _torchOn
+                                ? AppColors.accentTerracotta
+                                : const Color(0xCC1F2933),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.22),
+                            ),
+                          ),
+                          child: Icon(
+                            _torchOn
+                                ? Icons.flash_on_rounded
+                                : Icons.flash_off_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 10),
-                    ],
-                    Expanded(
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  Expanded(
+                    child: GlassContainer(
+                      tier: GlassTier.level2,
+                      borderRadius: 999,
+                      padding: const EdgeInsets.all(6),
                       child: GlassPrimaryButton(
-                        label: 'Input Kode Manual',
+                        label: 'Input Manual Kode',
                         icon: Icons.keyboard_alt_outlined,
-                        useBrandFill: false,
                         onPressed: _openManualInputDialog,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -336,9 +426,20 @@ class _CameraFallbackView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.videocam_off_rounded,
-                  size: 48, color: AppColors.tertiaryLight),
-              const SizedBox(height: 12),
+              Container(
+                width: 60,
+                height: 60,
+                decoration: const BoxDecoration(
+                  color: AppColors.semanticWarningSoft,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.videocam_off_rounded,
+                  size: 30,
+                  color: AppColors.statusPendingText,
+                ),
+              ),
+              const SizedBox(height: 14),
               Text('Kamera Tidak Aktif', style: theme.textTheme.titleLarge),
               const SizedBox(height: 8),
               Text(
@@ -346,7 +447,7 @@ class _CameraFallbackView extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
               GlassPrimaryButton(
                 label: 'Masukkan Kode Pesanan Manual',
                 icon: Icons.keyboard_alt_outlined,
@@ -367,9 +468,9 @@ class _ScannerOverlayPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final cutSize = (size.shortestSide * 0.62).clamp(210.0, 300.0);
+    final cutSize = (size.shortestSide * 0.60).clamp(210.0, 290.0);
     final rect = Rect.fromCenter(
-      center: Offset(size.width / 2, size.height / 2 - 20),
+      center: Offset(size.width / 2, size.height / 2),
       width: cutSize,
       height: cutSize,
     );
@@ -381,17 +482,17 @@ class _ScannerOverlayPainter extends CustomPainter {
 
     canvas.drawPath(
       bgPath,
-      Paint()..color = const Color(0xA60F172A), // rgba(15,23,42,0.65)
+      Paint()..color = const Color(0x941F2933), // rgba(31, 41, 51, 0.58)
     );
 
-    // Draw corner brackets
+    // Draw corner brackets (Terracotta during scan, Emerald when detected)
     final paint = Paint()
       ..color = bracketColor
       ..strokeWidth = 4
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    const len = 28.0;
+    const len = 30.0;
     // Top-left
     canvas.drawPath(
       Path()

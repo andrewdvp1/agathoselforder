@@ -5,10 +5,7 @@ import '../utils/formatters.dart';
 import 'glass_buttons.dart';
 import 'glass_container.dart';
 
-/// Real-Time Payment Success Modal (Glass Level 3 + Emerald Radial Glow)
-/// Follows Design System Section 6.5 (3):
-/// - User title: "Pembayaran Berhasil"
-/// - Kasir title: "Pesanan Diterima & Pembayaran Berhasil"
+/// Real-Time Payment Success Modal (Terracotta & Slate POS Level 3 Overlay)
 class PaymentSuccessModal extends StatelessWidget {
   final OrderModel order;
   final bool isCashierView;
@@ -29,7 +26,7 @@ class PaymentSuccessModal extends StatelessWidget {
     return showDialog<void>(
       context: context,
       barrierDismissible: true,
-      barrierColor: Colors.black.withValues(alpha: 0.65),
+      barrierColor: const Color(0x730F172A), // rgba(15, 23, 42, 0.45)
       builder: (_) => PaymentSuccessModal(
         order: order,
         isCashierView: isCashierView,
@@ -51,47 +48,35 @@ class PaymentSuccessModal extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 440),
         child: GlassContainer(
           tier: GlassTier.level3,
-          borderRadius: 20,
+          borderRadius: 24,
           padding: const EdgeInsets.all(24),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Emerald Radial Glow + Checkmark
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: 112,
-                      height: 112,
-                      decoration: BoxDecoration(
+                // Emerald Soft Halo + Solid Checkmark
+                Container(
+                  width: 88,
+                  height: 88,
+                  decoration: const BoxDecoration(
+                    color: AppColors.semanticSuccessSoft,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      decoration: const BoxDecoration(
+                        color: AppColors.semanticSuccess,
                         shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            AppColors.secondary.withValues(alpha: 0.45),
-                            AppColors.secondary.withValues(alpha: 0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Container(
-                      width: 68,
-                      height: 68,
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary.withValues(alpha: 0.22),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.secondaryLight,
-                          width: 2,
-                        ),
                       ),
                       child: const Icon(
                         Icons.check_rounded,
-                        color: AppColors.secondaryLight,
-                        size: 38,
+                        color: Colors.white,
+                        size: 34,
                       ),
                     ),
-                  ],
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -108,14 +93,14 @@ class PaymentSuccessModal extends StatelessWidget {
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 20),
-                // Summary Box
+                // Receipt Summary Box
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: AppColors.bgCanvas,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.borderGlassSubtle),
+                    border: Border.all(color: AppColors.borderSubtle),
                   ),
                   child: Column(
                     children: [
@@ -165,7 +150,9 @@ class PaymentSuccessModal extends StatelessWidget {
                               Text(
                                 AppFormatters.rupiah(item.subtotal),
                                 style: AppFormatters.tabular(
-                                  theme.textTheme.bodyMedium,
+                                  theme.textTheme.bodyMedium?.copyWith(
+                                    color: AppColors.textPrimary,
+                                  ),
                                 ),
                               ),
                             ],
@@ -184,7 +171,8 @@ class PaymentSuccessModal extends StatelessWidget {
                             AppFormatters.rupiah(order.totalAmount),
                             style: AppFormatters.tabular(
                               theme.textTheme.titleLarge?.copyWith(
-                                color: AppColors.secondaryLight,
+                                color: AppColors.semanticSuccess,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
