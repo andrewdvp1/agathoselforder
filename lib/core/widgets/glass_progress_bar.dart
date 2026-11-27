@@ -18,11 +18,11 @@ class GlassProgressBar extends StatelessWidget {
   Color get _fillColor {
     switch (variant) {
       case GlassProgressVariant.primary:
-        return AppColors.primaryTonalAlt;
+        return AppColors.slateHeader;
       case GlassProgressVariant.secondary:
-        return AppColors.secondaryLight;
+        return AppColors.semanticSuccess;
       case GlassProgressVariant.tertiary:
-        return AppColors.tertiaryLight;
+        return AppColors.accentTerracotta;
     }
   }
 
@@ -34,7 +34,7 @@ class GlassProgressBar extends StatelessWidget {
       child: Container(
         height: height,
         width: double.infinity,
-        color: Colors.white.withValues(alpha: 0.10),
+        color: AppColors.borderSubtle,
         alignment: Alignment.centerLeft,
         child: FractionallySizedBox(
           widthFactor: clamped,

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-/// 1. Primary Button (Soft Indigo Tonal OR Brand Fill) — minHeight 48, radius 10
+/// 1. Primary Execution CTA (Deep Charcoal #1F2933 when useBrandFill=true,
+///    or Interactive Accent Terracotta #E85D3F when useBrandFill=false)
 class GlassPrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -25,22 +26,20 @@ class GlassPrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = customColor ??
-        (useBrandFill ? AppColors.primary : AppColors.primaryTonal);
-    final fg = customColor != null
-        ? Colors.white
-        : (useBrandFill ? Colors.white : AppColors.primaryOnTonal);
+        (useBrandFill ? AppColors.ctaDark : AppColors.accentTerracotta);
+    const fg = Colors.white;
 
     final button = SizedBox(
       width: expand ? double.infinity : null,
       height: 48,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: onPressed != null && !loading && useBrandFill
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: onPressed != null && !loading
               ? [
                   BoxShadow(
-                    color: bg.withValues(alpha: 0.35),
-                    blurRadius: 14,
+                    color: bg.withValues(alpha: 0.18),
+                    blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
                 ]
@@ -52,15 +51,15 @@ class GlassPrimaryButton extends StatelessWidget {
             backgroundColor: bg,
             foregroundColor: fg,
             disabledBackgroundColor: bg.withValues(alpha: 0.45),
-            disabledForegroundColor: fg.withValues(alpha: 0.7),
+            disabledForegroundColor: fg.withValues(alpha: 0.75),
             elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 20),
           ),
           child: loading
-              ? SizedBox(
+              ? const SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
@@ -73,7 +72,7 @@ class GlassPrimaryButton extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     if (icon != null) ...[
-                      Icon(icon, size: 19),
+                      Icon(icon, size: 19, color: fg),
                       const SizedBox(width: 8),
                     ],
                     Flexible(
@@ -100,7 +99,7 @@ class GlassPrimaryButton extends StatelessWidget {
   }
 }
 
-/// 2. Secondary Button (Dark Glass Fill)
+/// 2. Secondary Button (Soft Slate Pill #EFF3F6 fill, dark text)
 class GlassSecondaryButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -127,10 +126,10 @@ class GlassSecondaryButton extends StatelessWidget {
         child: TextButton(
           onPressed: onPressed,
           style: TextButton.styleFrom(
-            backgroundColor: Colors.white.withValues(alpha: 0.08),
+            backgroundColor: AppColors.surfacePillInactive,
             foregroundColor: AppColors.textPrimary,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 18),
           ),
@@ -144,7 +143,9 @@ class GlassSecondaryButton extends StatelessWidget {
               ],
               Text(
                 label,
-                style: Theme.of(context).textTheme.labelLarge,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
               ),
             ],
           ),
@@ -154,7 +155,7 @@ class GlassSecondaryButton extends StatelessWidget {
   }
 }
 
-/// 3. Inverted Button (Light Surface Fill — e.g. Unduh Laporan, Cetak Struk)
+/// 3. Charcoal Action Button (Deep Charcoal #1F2933 fill — Unduh Laporan, Selesai)
 class GlassInvertedButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -183,11 +184,11 @@ class GlassInvertedButton extends StatelessWidget {
         child: ElevatedButton(
           onPressed: loading ? null : onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.invertedSurface,
-            foregroundColor: AppColors.neutral,
+            backgroundColor: AppColors.ctaDark,
+            foregroundColor: Colors.white,
             elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 18),
           ),
@@ -197,7 +198,7 @@ class GlassInvertedButton extends StatelessWidget {
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: AppColors.neutral,
+                    color: Colors.white,
                   ),
                 )
               : Row(
@@ -205,13 +206,13 @@ class GlassInvertedButton extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     if (icon != null) ...[
-                      Icon(icon, size: 18, color: AppColors.neutral),
+                      Icon(icon, size: 18, color: Colors.white),
                       const SizedBox(width: 8),
                     ],
                     Text(
                       label,
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: AppColors.neutral,
+                            color: Colors.white,
                           ),
                     ),
                   ],
@@ -222,7 +223,7 @@ class GlassInvertedButton extends StatelessWidget {
   }
 }
 
-/// 4. Outlined Button (Neutral or Destructive Coral)
+/// 4. Outlined Button (White outlined OR Soft Red destructive fill)
 class GlassOutlinedButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -241,10 +242,11 @@ class GlassOutlinedButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fg = isDestructive ? AppColors.errorLight : AppColors.invertedSurface;
+    final fg = isDestructive ? AppColors.semanticError : AppColors.textPrimary;
+    final bg = isDestructive ? AppColors.semanticErrorSoft : AppColors.surfaceCard;
     final border = isDestructive
-        ? AppColors.error.withValues(alpha: 0.5)
-        : Colors.white.withValues(alpha: 0.24);
+        ? AppColors.statusErrorBorder
+        : const Color(0xFFD5DCE2);
 
     return MouseRegion(
       cursor: onPressed != null
@@ -256,10 +258,11 @@ class GlassOutlinedButton extends StatelessWidget {
         child: OutlinedButton(
           onPressed: onPressed,
           style: OutlinedButton.styleFrom(
+            backgroundColor: bg,
             foregroundColor: fg,
-            side: BorderSide(color: border),
+            side: BorderSide(color: border, width: isDestructive ? 1 : 1.5),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 18),
           ),
@@ -271,9 +274,12 @@ class GlassOutlinedButton extends StatelessWidget {
                 Icon(icon, size: 18, color: fg),
                 const SizedBox(width: 8),
               ],
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(color: fg),
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: fg),
+                ),
               ),
             ],
           ),
@@ -285,7 +291,7 @@ class GlassOutlinedButton extends StatelessWidget {
 
 enum TonalIconVariant { indigo, emerald, amber, coral }
 
-/// 5. Circular Tonal Icon Button (48x48 touch target, 40x40 tonal circle)
+/// 5. Circular Tonal Icon Button (48x48 touch target, 40x40 semantic circle)
 class GlassCircularTonalIcon extends StatelessWidget {
   final IconData icon;
   final TonalIconVariant variant;
@@ -303,26 +309,26 @@ class GlassCircularTonalIcon extends StatelessWidget {
   Color get _bg {
     switch (variant) {
       case TonalIconVariant.indigo:
-        return AppColors.primaryTonal;
+        return AppColors.statusProcessingSoft;
       case TonalIconVariant.emerald:
-        return AppColors.secondaryTonal;
+        return AppColors.semanticSuccessSoft;
       case TonalIconVariant.amber:
-        return AppColors.tertiaryTonal;
+        return AppColors.semanticWarningSoft;
       case TonalIconVariant.coral:
-        return AppColors.errorTonal;
+        return AppColors.semanticErrorSoft;
     }
   }
 
   Color get _fg {
     switch (variant) {
       case TonalIconVariant.indigo:
-        return AppColors.primaryIconDark;
+        return AppColors.statusProcessingText;
       case TonalIconVariant.emerald:
-        return AppColors.secondaryOnTonal;
+        return AppColors.semanticSuccess;
       case TonalIconVariant.amber:
-        return AppColors.tertiaryOnTonal;
+        return AppColors.semanticWarning;
       case TonalIconVariant.coral:
-        return AppColors.errorOnTonal;
+        return AppColors.semanticError;
     }
   }
 
@@ -360,7 +366,7 @@ class GlassCircularTonalIcon extends StatelessWidget {
   }
 }
 
-/// 6. Extended Primary FAB (radius 12)
+/// 6. Extended Terracotta Primary FAB (pill capsule)
 class GlassExtendedPrimaryFab extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -379,11 +385,11 @@ class GlassExtendedPrimaryFab extends StatelessWidget {
       cursor: SystemMouseCursors.click,
       child: FloatingActionButton.extended(
         onPressed: onPressed,
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.accentTerracotta,
         foregroundColor: Colors.white,
         elevation: 6,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        icon: Icon(icon),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+        icon: Icon(icon, color: Colors.white),
         label: Text(
           label,
           style: Theme.of(context)

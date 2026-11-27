@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
-import 'glass_container.dart';
 import 'glass_scaffold.dart';
 
 class GlassNavItem {
@@ -17,10 +16,10 @@ class GlassNavItem {
   });
 }
 
-/// Responsive Glassmorphic Shell implementing Breakpoints in Design System Section 5.3:
-/// - Mobile (<600px): Floating Glass Capsule Bottom Navigation Pill
-/// - Tablet (600-1024px): Glass Navigation Rail (72px)
-/// - Desktop Web (>1024px): Glass Sidebar Panel (250px)
+/// Responsive Terracotta & Slate POS Navigation Shell:
+/// - Mobile (<600px): Elevated Pure White Docked Bottom Navigation Bar
+/// - Tablet (600-1024px): Deep Slate Blue Navigation Rail (76px)
+/// - Desktop (>1024px): Deep Slate Blue Persistent Sidebar (250px)
 class GlassNavigationShell extends StatelessWidget {
   final String appTitle;
   final String roleLabel;
@@ -57,72 +56,51 @@ class GlassNavigationShell extends StatelessWidget {
           return GlassScaffold(
             showTertiaryOrb: showTertiaryOrb,
             floatingActionButton: floatingActionButton,
-            body: SafeArea(
-              child: Row(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
-                    child: isDesktop
-                        ? _GlassSidebar(
-                            appTitle: appTitle,
-                            roleLabel: roleLabel,
-                            userName: userName,
-                            items: items,
-                            selectedIndex: selectedIndex,
-                            onSelect: onSelect,
-                          )
-                        : _GlassNavRail(
-                            items: items,
-                            selectedIndex: selectedIndex,
-                            onSelect: onSelect,
-                          ),
-                  ),
-                  Expanded(child: child),
-                ],
-              ),
+            body: Row(
+              children: [
+                isDesktop
+                    ? _SlateSidebar(
+                        appTitle: appTitle,
+                        roleLabel: roleLabel,
+                        userName: userName,
+                        items: items,
+                        selectedIndex: selectedIndex,
+                        onSelect: onSelect,
+                      )
+                    : _SlateNavRail(
+                        items: items,
+                        selectedIndex: selectedIndex,
+                        onSelect: onSelect,
+                      ),
+                Expanded(child: child),
+              ],
             ),
           );
         }
 
-        // Mobile (<600px): Floating Glass Capsule Bottom Navigation Pill
+        // Mobile (<600px): Elevated White Bottom Navigation Deck
         return GlassScaffold(
           showTertiaryOrb: showTertiaryOrb,
-          floatingActionButton: floatingActionButton != null
-              ? Padding(
-                  padding: const EdgeInsets.only(bottom: 76),
-                  child: floatingActionButton,
-                )
-              : null,
-          body: Stack(
-            children: [
-              Positioned.fill(child: child),
-              Positioned(
-                left: 16,
-                right: 16,
-                bottom: 16,
-                child: SafeArea(
-                  top: false,
-                  child: _FloatingCapsuleNav(
-                    items: items,
-                    selectedIndex: selectedIndex,
-                    onSelect: onSelect,
-                  ),
-                ),
-              ),
-            ],
+          extendBody: false,
+          floatingActionButton: floatingActionButton,
+          bottomNavigationBar: _MobileBottomNavBar(
+            items: items,
+            selectedIndex: selectedIndex,
+            onSelect: onSelect,
           ),
+          body: child,
         );
       },
     );
   }
 }
 
-class _FloatingCapsuleNav extends StatelessWidget {
+class _MobileBottomNavBar extends StatelessWidget {
   final List<GlassNavItem> items;
   final int selectedIndex;
   final ValueChanged<int> onSelect;
 
-  const _FloatingCapsuleNav({
+  const _MobileBottomNavBar({
     required this.items,
     required this.selectedIndex,
     required this.onSelect,
@@ -130,153 +108,231 @@ class _FloatingCapsuleNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassContainer(
-      tier: GlassTier.level2,
-      borderRadius: 999,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: List.generate(items.length, (idx) {
-          final item = items[idx];
-          final active = idx == selectedIndex;
-          return Tooltip(
-            message: item.label,
-            child: MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => onSelect(idx),
-                child: SizedBox(
-                  width: 52,
-                  height: 48,
-                  child: Center(
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: active
-                                ? AppColors.primaryTonal
-                                : Colors.transparent,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            active ? item.activeIcon : item.icon,
-                            size: 22,
-                            color: active
-                                ? AppColors.primaryOnTonal
-                                : AppColors.textInactiveIcon,
-                          ),
-                        ),
-                        if (item.badgeCount > 0)
-                          Positioned(
-                            right: -2,
-                            top: -2,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 5, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: AppColors.secondary,
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(
-                                '${item.badgeCount}',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.neutral,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
-}
-
-class _GlassNavRail extends StatelessWidget {
-  final List<GlassNavItem> items;
-  final int selectedIndex;
-  final ValueChanged<int> onSelect;
-
-  const _GlassNavRail({
-    required this.items,
-    required this.selectedIndex,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassContainer(
-      tier: GlassTier.level2,
-      width: 72,
-      borderRadius: 20,
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Column(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
-            ),
-            child: const Icon(Icons.qr_code_scanner_rounded,
-                color: AppColors.primaryTonal, size: 22),
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceCard,
+        border: const Border(
+          top: BorderSide(color: AppColors.borderSubtle, width: 1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1F2933).withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
           ),
-          const SizedBox(height: 24),
-          ...List.generate(items.length, (idx) {
-            final item = items[idx];
-            final active = idx == selectedIndex;
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Tooltip(
-                message: item.label,
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 64,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(items.length, (idx) {
+              final item = items[idx];
+              final active = idx == selectedIndex;
+              final fgColor = active
+                  ? AppColors.accentTerracotta
+                  : AppColors.textSecondary;
+
+              return Expanded(
                 child: MouseRegion(
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
                     onTap: () => onSelect(idx),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: active
-                            ? AppColors.primaryTonal
-                            : Colors.transparent,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        active ? item.activeIcon : item.icon,
-                        color: active
-                            ? AppColors.primaryOnTonal
-                            : AppColors.textInactiveIcon,
+                    child: SizedBox(
+                      height: 64,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 160),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: active
+                                      ? AppColors.accentSoft
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Icon(
+                                  active ? item.activeIcon : item.icon,
+                                  size: 22,
+                                  color: fgColor,
+                                ),
+                              ),
+                              if (item.badgeCount > 0)
+                                Positioned(
+                                  right: 2,
+                                  top: -2,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 5,
+                                      vertical: 1,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.accentTerracotta,
+                                      borderRadius: BorderRadius.circular(999),
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '${item.badgeCount}',
+                                      style: const TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            item.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontSize: 11,
+                              fontWeight:
+                                  active ? FontWeight.w600 : FontWeight.w500,
+                              color: fgColor,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-              ),
-            );
-          }),
-        ],
+              );
+            }),
+          ),
+        ),
       ),
     );
   }
 }
 
-class _GlassSidebar extends StatelessWidget {
+class _SlateNavRail extends StatelessWidget {
+  final List<GlassNavItem> items;
+  final int selectedIndex;
+  final ValueChanged<int> onSelect;
+
+  const _SlateNavRail({
+    required this.items,
+    required this.selectedIndex,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 76,
+      height: double.infinity,
+      color: AppColors.slateSidebar,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          child: Column(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.accentTerracotta,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.storefront_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ...List.generate(items.length, (idx) {
+                final item = items[idx];
+                final active = idx == selectedIndex;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Tooltip(
+                    message: item.label,
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () => onSelect(idx),
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: active
+                                    ? AppColors.accentTerracotta
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                active ? item.activeIcon : item.icon,
+                                color: active
+                                    ? Colors.white
+                                    : AppColors.onSlateMuted,
+                              ),
+                            ),
+                            if (item.badgeCount > 0)
+                              Positioned(
+                                right: -2,
+                                top: -2,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 5,
+                                    vertical: 1,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.accentTerracotta,
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(
+                                      color: AppColors.slateSidebar,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '${item.badgeCount}',
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SlateSidebar extends StatelessWidget {
   final String appTitle;
   final String roleLabel;
   final String userName;
@@ -284,7 +340,7 @@ class _GlassSidebar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelect;
 
-  const _GlassSidebar({
+  const _SlateSidebar({
     required this.appTitle,
     required this.roleLabel,
     required this.userName,
@@ -296,43 +352,186 @@ class _GlassSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return GlassContainer(
-      tier: GlassTier.level2,
+    return Container(
       width: 250,
-      borderRadius: 20,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      height: double.infinity,
+      color: AppColors.slateSidebar,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.22),
-                  borderRadius: BorderRadius.circular(12),
-                  border:
-                      Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
-                ),
-                child: const Icon(Icons.qr_code_2_rounded,
-                    color: AppColors.primaryTonal, size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      appTitle,
-                      style: theme.textTheme.titleMedium,
-                      overflow: TextOverflow.ellipsis,
+              // Brand Block
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.accentTerracotta,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.16),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
-                    Text(
-                      roleLabel,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppColors.secondaryLight,
-                        fontWeight: FontWeight.w600,
+                    child: const Icon(
+                      Icons.storefront_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          appTitle,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          roleLabel,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.onSlateMuted,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 28),
+              ...List.generate(items.length, (idx) {
+                final item = items[idx];
+                final active = idx == selectedIndex;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      onTap: () => onSelect(idx),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 160),
+                        height: 48,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        decoration: BoxDecoration(
+                          color: active
+                              ? AppColors.accentTerracotta
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: active
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.16),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              active ? item.activeIcon : item.icon,
+                              size: 20,
+                              color:
+                                  active ? Colors.white : AppColors.onSlateMuted,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                item.label,
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: active
+                                      ? Colors.white
+                                      : AppColors.onSlateMuted,
+                                  fontWeight: active
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            if (item.badgeCount > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: active
+                                      ? Colors.white
+                                      : AppColors.accentTerracotta,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  '${item.badgeCount}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: active
+                                        ? AppColors.accentTerracotta
+                                        : Colors.white,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.slateSidebarFooter,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: AppColors.accentTerracotta,
+                      child: Text(
+                        userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            userName,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: Colors.white,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            roleLabel,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.onSlateMuted,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -340,105 +539,7 @@ class _GlassSidebar extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          ...List.generate(items.length, (idx) {
-            final item = items[idx];
-            final active = idx == selectedIndex;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: () => onSelect(idx),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 160),
-                    height: 48,
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    decoration: BoxDecoration(
-                      color: active
-                          ? AppColors.primaryTonal
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          active ? item.activeIcon : item.icon,
-                          size: 20,
-                          color: active
-                              ? AppColors.primaryOnTonal
-                              : AppColors.textInactiveIcon,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            item.label,
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: active
-                                  ? AppColors.primaryOnTonal
-                                  : AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        if (item.badgeCount > 0)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.secondary,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              '${item.badgeCount}',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.neutral,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }),
-          const Spacer(),
-          const Divider(),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.25),
-                child: Text(
-                  userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: AppColors.primaryTonal,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      userName,
-                      style: theme.textTheme.labelLarge,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      roleLabel,
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
